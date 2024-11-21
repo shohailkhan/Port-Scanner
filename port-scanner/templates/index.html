@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Port Scanner</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Port Scanner</h1>
+        <form id="scan-form">
+            <input type="text" id="host" placeholder="Target Host" required>
+            <input type="number" id="start-port" placeholder="Start Port" required>
+            <input type="number" id="end-port" placeholder="End Port" required>
+            <button type="submit">Scan Ports</button>
+        </form>
+        <div id="scan-results" class="show"></div>
+
+        <h2>Open or Close a Port</h2>
+        <form id="port-form">
+            <input type="number" id="port" placeholder="Port Number" required>
+            <button type="button" id="open-btn">Open Port</button>
+            <button type="button" id="close-btn">Close Port</button>
+        </form>
+        <div id="port-results" class="show"></div>
+    </div>
+
+    <script>
+        document.getElementById('scan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const host = document.getElementById('host').value;
+            const startPort = document.getElementById('start-port').value;
+            const endPort = document.getElementById('end-port').value;
+
+            const resultsDiv = document.getElementById('scan-results');
+            resultsDiv.innerText = '';
+
+            const response = await fetch('/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ host, start_port: startPort, end_port: endPort })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (Object.keys(data).length > 0) {
+                    resultsDiv.innerText = `Scan Results:\n` + Object.entries(data).map(([port, state]) => `Port ${port}: ${state}`).join('\n');
+                } else {
+                    resultsDiv.innerText = 'No open ports found.';
+                }
+                resultsDiv.classList.add('show');
+            } else {
+                console.error('Error scanning ports:', response.statusText);
+            }
+        });
+
+        document.getElementById('open-btn').addEventListener('click', async () => {
+            const port = document.getElementById('port').value;
+
+            const response = await fetch('/open_port', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port })
+            });
+
+            const resultsDiv = document.getElementById('port-results');
+            if (response.ok) {
+                const data = await response.json();
+                resultsDiv.innerText = data.message;
+                resultsDiv.classList.add('show');
+            } else {
+                console.error('Error opening port:', response.statusText);
+            }
+        });
+
+        document.getElementById('close-btn').addEventListener('click', async () => {
+            const port = document.getElementById('port').value;
+
+            const response = await fetch('/close_port', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port })
+            });
+
+            const resultsDiv = document.getElementById('port-results');
+            if (response.ok) {
+                const data = await response.json();
+                resultsDiv.innerText = data.message;
+                resultsDiv.classList.add('show');
+            } else {
+                console.error('Error closing port:', response.statusText);
+            }
+        });
+    </script>
+</body>
+</html>
